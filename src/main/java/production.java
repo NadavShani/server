@@ -42,11 +42,6 @@ public class production {
 
                         }
                         diffieThread df = new diffieThread(diffiePort,prod);
-                        /* 12.11.2021
-                       // server = new Server(diffiePort);
-                        /* Add New ClientInstance (client) */
-                       // ClientInstance ci = new ClientInstance(packet.getSrcAddr(),server.getAes());
-                       // prod.clientInstances.add(ci); */
                     }
 
                 }
@@ -79,13 +74,6 @@ public class production {
                         }
 
                         new RunMe(prod,clientAddr).run();
-
-                        /*
-                        ClientInstance ci = prod.getClientInstancce(clientAddr);
-                        payload = ci.getAes().decrypt(packet.getPayload());
-                        Packet p = prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
-                        p.recalculateChecksum(); //checksum
-                        w.send(p, true); */
                     }
 
                 }
