@@ -13,7 +13,12 @@ public class diffieThread extends Thread {
     }
 
     public void run(){
-       Server server = new Server(this.port);
-       this.prodInstance.addClientInstance(server.getSocket().getInetAddress().getHostAddress(),server.getAes());
+        try {
+            Server server = new Server(this.port);
+            this.prodInstance.addClientInstance(server.getSocket().getInetAddress().getHostAddress(),server.getAes());
+        }
+       catch(Exception e){
+           e.printStackTrace();
+       }
     }
 }

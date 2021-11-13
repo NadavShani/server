@@ -28,8 +28,7 @@ public class Server
 
 
 
-    public Server(int port)
-    {
+    public Server(int port) throws Exception {
         try {
             server = new ServerSocket(port);
             System.out.println("Server started");
@@ -45,10 +44,10 @@ public class Server
 
             out = new DataOutputStream(socket.getOutputStream());
             byte[] payload = new byte[4096];
-            byte [] encrypted = new byte[4096];
-            byte [] iv = new byte[4096];
+            byte[] encrypted = new byte[4096];
+            byte[] iv = new byte[4096];
             /* Server is waiting for start signal from client */
-            while(!in.readUTF().equals("dh-start"));
+            while (!in.readUTF().equals("dh-start")) ;
 
             try {
                 bobDH bob = new bobDH();
@@ -70,35 +69,21 @@ public class Server
                 in.read(iv);
                 out.writeUTF("iv-ok"); /* in is ok , continute */
 
-                aes = new AES(bob.getSecret(),Decode(iv));
+                aes = new AES(bob.getSecret(), Decode(iv));
 
                 /* reading encrypted message */
-               // in.read(encrypted);
+                // in.read(encrypted);
 
 
                 /* trying to descrypt alice message */
-              //  System.out.println("decrypted is: " + new String(aes.decrypt(Decode(encrypted))));
+                //  System.out.println("decrypted is: " + new String(aes.decrypt(Decode(encrypted))));
 
-              //  out.write(aes.encrypt("hi there you??".getBytes()));
-            }
-            catch (InvalidAlgorithmParameterException e) {
-                    e.printStackTrace();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (NoSuchAlgorithmException e) {
-                    e.printStackTrace();
-                } catch (InvalidKeySpecException e) {
-                    e.printStackTrace();
-                } catch (InvalidKeyException e) {
-                    e.printStackTrace();
-                } catch (NoSuchPaddingException e) {
+                //  out.write(aes.encrypt("hi there you??".getBytes()));
+            } catch (Exception e) {
                 e.printStackTrace();
-            } //catch (IllegalBlockSizeException e) {
-               // e.printStackTrace();
-          //  } catch (BadPaddingException e) {
-             //   e.printStackTrace();
-          //  }
+                throw new Exception("Diffie Hellman Failed with Client");
 
+            }
 
             /* close connection */
             socket.close();
@@ -108,7 +93,8 @@ public class Server
         }
         catch(IOException i)
         {
-            System.out.println(i);
+            i.printStackTrace();
+            throw new Exception("Diffie Hellman Failed with Client");
         }
 
 
@@ -128,10 +114,7 @@ public class Server
     }
 
 
-    public static void main(String args[])
-    {
-        Server server = new Server(5300);
-    }
+
 
 
     /************** GETTERS **************/
