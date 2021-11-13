@@ -69,7 +69,6 @@ public class production {
                                 ClientInstance ci = prod.getClientInstancce(clientAddr);
                                 try {
                                     byte [] payload = ci.getAes().decrypt(packet.getPayload());
-                                    System.out.println("decrypting....");
                                     Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
                                     p.recalculateChecksum(); //checksum
                                     w.send(p, true); //send to server
