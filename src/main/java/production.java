@@ -37,8 +37,6 @@ public class production {
                 filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = 5301";
         }
 
-        System.out.println(filter);
-
         /* Open Windivert Handle */
         WinDivert w = new WinDivert(filter);
         w.open(); // packets will be captured from now on
