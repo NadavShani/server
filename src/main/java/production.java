@@ -51,14 +51,42 @@ public class production {
 
                 }
                 else {
+
                     /* Is Client Exists */
                     boolean isClientExists = prod.isClientExists(clientAddr);
                     if(isClientExists) {
+                        class RunMe implements Runnable {
+                            private production prod;
+                            private String hostAddress;
+                            public RunMe(production prodInstance,String hostAddress){
+                                this.prod=prodInstance;
+                                this.hostAddress=hostAddress;
+                            }
+
+                            @Override
+                            public void run() {
+
+                                ClientInstance ci = prod.getClientInstancce(clientAddr);
+                                try {
+                                    byte [] payload = ci.getAes().decrypt(packet.getPayload());
+                                    System.out.println("decrypting....");
+                                    Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
+                                    p.recalculateChecksum(); //checksum
+                                    w.send(p, true); //send to server
+                                } catch (Exception e){
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+
+                        new RunMe(prod,clientAddr).run();
+
+                        /*
                         ClientInstance ci = prod.getClientInstancce(clientAddr);
                         payload = ci.getAes().decrypt(packet.getPayload());
                         Packet p = prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
                         p.recalculateChecksum(); //checksum
-                        w.send(p, true);
+                        w.send(p, true); */
                     }
 
                 }
