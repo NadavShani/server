@@ -1,9 +1,12 @@
 import com.github.ffalcinelli.jdivert.*;
 import com.github.ffalcinelli.jdivert.exceptions.*;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Scanner;
 
 public class production {
 
@@ -16,10 +19,28 @@ public class production {
         this.clientInstances  = new ArrayList<ClientInstance>();
     }
 
-    public static void main(String[] args) throws WinDivertException {
+    public static void main(String[] args) throws WinDivertException, FileNotFoundException {
         production prod = new production();
-        byte [] payload;
-        WinDivert w = new WinDivert("tcp.DstPort = 21 or tcp.DstPort = 20 or tcp.DstPort = 5301 ");
+
+        /* read unsecured protocols file , server version*/
+        File file = new File("unsecured.config");
+        Scanner myReader = new Scanner(file);
+        ArrayList<Integer> unsecuredProtocols = new ArrayList<Integer>();
+        while (myReader.hasNextLine())
+            unsecuredProtocols.add(Integer.parseInt(myReader.nextLine()));
+
+        String filter = new String();
+        for(int i=0;i<unsecuredProtocols.size();i++) {
+            if(i < unsecuredProtocols.size() -1)
+                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or ";
+            else
+                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = 5301";
+        }
+
+        System.out.println(filter);
+
+        /* Open Windivert Handle */
+        WinDivert w = new WinDivert(filter);
         w.open(); // packets will be captured from now on
 
         /* Main Loop */
@@ -60,7 +81,6 @@ public class production {
 
                             @Override
                             public void run() {
-
                                 ClientInstance ci = prod.getClientInstancce(clientAddr);
                                 try {
                                     byte [] payload = ci.getAes().decrypt(packet.getPayload());
@@ -74,7 +94,7 @@ public class production {
                         }
 
                         new RunMe(prod,clientAddr).run();
-                    }
+                    } //else client should intialize diffie
 
                 }
             }
@@ -89,7 +109,6 @@ public class production {
         ClientInstance ci = new ClientInstance(clientAddress,aes);
         clientInstances.add(ci);
     }
-
 
     public void deleteClientInstance(String clientAddress) {
         ClientInstance found = null;
