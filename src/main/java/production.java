@@ -40,7 +40,7 @@ public class production {
         /* Open Windivert Handle */
         WinDivert w = new WinDivert(filter);
         w.open(); // packets will be captured from now on
-
+        System.out.println("Listening...");
         /* Main Loop */
         while (true) {
 
@@ -51,7 +51,6 @@ public class production {
                 if (packet.getTcp().getDstPort() == managementPort) {
 
                     String managementMsg = new String(packet.getPayload());
-                    System.out.println(packet.getTcp().getDstPort());
                     if(managementMsg.indexOf("start-diffie") > -1) {
                         boolean isClientExists = prod.isClientExists(clientAddr);
                         if(isClientExists){
@@ -65,7 +64,6 @@ public class production {
 
                 }
                 else {
-
                     /* Is Client Exists */
                     boolean isClientExists = prod.isClientExists(clientAddr);
                     if(isClientExists) {
