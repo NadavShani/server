@@ -81,7 +81,8 @@ public class Server
                 //  out.write(aes.encrypt("hi there you??".getBytes()));
             } catch (Exception e) {
                 e.printStackTrace();
-                socket.close();
+                if(socket != null)
+                    socket.close();
                 throw new Exception("Diffie Hellman Failed with Client");
 
             }
@@ -95,7 +96,8 @@ public class Server
         catch(IOException i)
         {
             i.printStackTrace();
-            socket.close();
+            if(socket != null)
+                socket.close();
             throw new Exception("Diffie Hellman Failed with Client");
         }
 
