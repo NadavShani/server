@@ -101,6 +101,7 @@ public class Server
             throw new Exception("Diffie Hellman Failed with Client");
         }
 
+        server.close();
 
     }
 
