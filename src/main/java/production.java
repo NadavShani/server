@@ -34,7 +34,7 @@ public class production {
             if(i < unsecuredProtocols.size() -1)
                 filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or ";
             else
-                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = 5301";
+                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = 5301 or tcp.SrcPort = 21";
         }
 
         /* Open Windivert Handle */
@@ -47,51 +47,70 @@ public class production {
             try {
                 Packet packet = w.recv();  // read a single packet
                 String clientAddr = packet.getSrcAddr();
-                /* Do Client Wants To Establish Diffie? */
-                if (packet.getTcp().getDstPort() == managementPort) {
-
-                    String managementMsg = new String(packet.getPayload());
-                    if(managementMsg.indexOf("start-diffie") > -1) {
-                        boolean isClientExists = prod.isClientExists(clientAddr);
-                        if(isClientExists){
-                            /* if client is trying to re-exchange diffie - delete current instance of client */
-                            System.out.println("Deleting Client Instance: " + clientAddr);
-                            prod.deleteClientInstance(clientAddr);
-
+                if (clientAddr.equals("10.0.0.4")) {
+                    if (prod.isClientExists(packet.getDstAddr())) {
+                        ClientInstance ci = prod.getClientInstancce(packet.getDstAddr());
+                        try {
+                            byte[] payload;
+                            payload = ci.getAes().encrypt(packet.getPayload());
+                            Packet p = prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
+                            p.recalculateChecksum(); //checksum
+                            System.out.println("yes");
+                            w.send(p, true); //send to server
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                        diffieThread df = new diffieThread(diffiePort,prod);
+
                     }
+                } else {
+                    /* Do Client Wants To Establish Diffie? */
+                    if (packet.getTcp().getDstPort() == managementPort) {
 
-                }
-                else {
-                    /* Is Client Exists */
-                    boolean isClientExists = prod.isClientExists(clientAddr);
-                    if(isClientExists) {
-                        class RunMe implements Runnable {
-                            private production prod;
-                            private String hostAddress;
-                            public RunMe(production prodInstance,String hostAddress){
-                                this.prod=prodInstance;
-                                this.hostAddress=hostAddress;
+                        String managementMsg = new String(packet.getPayload());
+                        if (managementMsg.indexOf("start-diffie") > -1) {
+                            boolean isClientExists = prod.isClientExists(clientAddr);
+                            if (isClientExists) {
+                                /* if client is trying to re-exchange diffie - delete current instance of client */
+                                System.out.println("Deleting Client Instance: " + clientAddr);
+                                prod.deleteClientInstance(clientAddr);
+
                             }
+                            diffieThread df = new diffieThread(diffiePort, prod);
+                        }
 
-                            @Override
-                            public void run() {
-                                ClientInstance ci = prod.getClientInstancce(clientAddr);
-                                try {
-                                    byte [] payload = ci.getAes().decrypt(packet.getPayload());
-                                    Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
-                                    p.recalculateChecksum(); //checksum
-                                    w.send(p, true); //send to server
-                                } catch (Exception e){
-                                    e.printStackTrace();
+                    } else {
+                        /* Is Client Exists */
+
+                        boolean isClientExists = prod.isClientExists(clientAddr);
+                        if (isClientExists) {
+                            class RunMe implements Runnable {
+                                private production prod;
+                                private String hostAddress;
+
+                                public RunMe(production prodInstance, String hostAddress) {
+                                    this.prod = prodInstance;
+                                    this.hostAddress = hostAddress;
+                                }
+
+                                @Override
+                                public void run() {
+                                    ClientInstance ci = prod.getClientInstancce(clientAddr);
+                                    try {
+                                        byte[] payload;
+                                        payload = ci.getAes().decrypt(packet.getPayload());
+                                        Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
+                                        p.recalculateChecksum(); //checksum
+                                        w.send(p, true); //send to server
+                                    } catch (Exception e) {
+                                        e.printStackTrace();
+                                    }
                                 }
                             }
-                        }
 
-                        new RunMe(prod,clientAddr).run();
-                    } //else client should intialize diffie
+                            new RunMe(prod, clientAddr).run();
+                        } //else client should intialize diffie
 
+                    }
                 }
             }
             catch (Exception e){
