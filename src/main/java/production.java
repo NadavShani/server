@@ -3,6 +3,8 @@ import com.github.ffalcinelli.jdivert.exceptions.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -14,6 +16,7 @@ public class production {
     private static int managementPort = 5301;
     private static Server server;
     private ArrayList<ClientInstance> clientInstances;
+    private String localAddress = null;
 
     public production(){
         this.clientInstances  = new ArrayList<ClientInstance>();
@@ -21,6 +24,14 @@ public class production {
 
     public static void main(String[] args) throws WinDivertException, FileNotFoundException {
         production prod = new production();
+
+        try {
+            prod.setLocalAddress(InetAddress.getLocalHost().getHostAddress());
+        }
+        catch (UnknownHostException u){
+            u.printStackTrace();
+            System.exit(1);
+        }
 
         /* read unsecured protocols file , server version*/
         File file = new File("unsecured.config");
@@ -32,9 +43,9 @@ public class production {
         String filter = new String();
         for(int i=0;i<unsecuredProtocols.size();i++) {
             if(i < unsecuredProtocols.size() -1)
-                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or ";
+                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.SrcPort = " + unsecuredProtocols.get(i) + " or ";
             else
-                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = 5301 or tcp.SrcPort = 21";
+                filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.SrcPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = " + managementPort;
         }
 
         /* Open Windivert Handle */
@@ -47,22 +58,35 @@ public class production {
             try {
                 Packet packet = w.recv();  // read a single packet
                 String clientAddr = packet.getSrcAddr();
-                if (clientAddr.equals("10.0.0.4")) {
-                    if (prod.isClientExists(packet.getDstAddr())) {
-                        ClientInstance ci = prod.getClientInstancce(packet.getDstAddr());
-                        try {
-                            byte[] payload;
-                            payload = ci.getAes().encrypt(packet.getPayload());
-                            Packet p = prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
-                            p.recalculateChecksum(); //checksum
-                            System.out.println("yes");
-                            w.send(p, true); //send to server
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                        }
+                if (clientAddr.equals(prod.getLocalAddress())) { /* Source is Now The Server - Sending Outbound */
+                    String hostAddress = packet.getDstAddr(); /* Destination is Client */
+                    if (prod.isClientExists(hostAddress)) { /* is destination a client that i know? */
+                        class RunMe implements Runnable {
+                            private production prod;
+                            private String hostAddress;
 
+                            public RunMe(production prodInstance, String hostAddress) {
+                                this.prod = prodInstance;
+                                this.hostAddress = hostAddress;
+                            }
+
+                            @Override
+                            public void run() {
+                                ClientInstance ci = this.prod.getClientInstancce(this.hostAddress);  /* get destination ClientInstance Object */
+                                try {
+                                    byte[] payload = ci.getAes().encrypt(packet.getPayload());
+                                    Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
+                                    p.recalculateChecksum(); //checksum
+                                    w.send(p, false); //send to server
+                                } catch (Exception e) {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }
+                        new RunMe(prod, hostAddress).run();
                     }
-                } else {
+                }
+                else {
                     /* Do Client Wants To Establish Diffie? */
                     if (packet.getTcp().getDstPort() == managementPort) {
 
@@ -80,7 +104,6 @@ public class production {
 
                     } else {
                         /* Is Client Exists */
-
                         boolean isClientExists = prod.isClientExists(clientAddr);
                         if (isClientExists) {
                             class RunMe implements Runnable {
@@ -94,13 +117,13 @@ public class production {
 
                                 @Override
                                 public void run() {
-                                    ClientInstance ci = prod.getClientInstancce(clientAddr);
+                                    ClientInstance ci = this.prod.getClientInstancce(clientAddr);
                                     try {
                                         byte[] payload;
                                         payload = ci.getAes().decrypt(packet.getPayload());
-                                        Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
-                                        p.recalculateChecksum(); //checksum
-                                        w.send(p, true); //send to server
+                                        Packet p = this.prod.generateNewPacketWithPaylod(packet, payload);
+                                        p.recalculateChecksum();
+                                        w.send(p, false);
                                     } catch (Exception e) {
                                         e.printStackTrace();
                                     }
@@ -108,7 +131,7 @@ public class production {
                             }
 
                             new RunMe(prod, clientAddr).run();
-                        } //else client should intialize diffie
+                        }
 
                     }
                 }
@@ -135,6 +158,7 @@ public class production {
 
     }
 
+
     /* get client from clientInstance list , return null otherwise */
     public ClientInstance getClientInstancce(String ip){
         ClientInstance result = null;
@@ -153,9 +177,6 @@ public class production {
         return result;
     }
 
-    public int getManagementPort(){
-        return managementPort;
-    }
 
     public Packet generateNewPacketWithPaylod(Packet oldPacket,byte [] newPayLoad) throws WinDivertException { /*old packet and new payload*/
         /* clone header */
@@ -176,6 +197,25 @@ public class production {
         return p;
 
     }
+
+    /************** SETTERS **************/
+    /* Set production local ip for incoming */
+    private void setLocalAddress(String localAddress){
+        this.localAddress = localAddress;
+    }
+
+    /************** GETTERS **************/
+
+    private String getLocalAddress(){
+        return this.localAddress;
+    }
+
+    public int getManagementPort(){
+        return managementPort;
+    }
+
+
+
 
 }
 

@@ -49,14 +49,14 @@ public class AES {
 
     }
 
-    public byte [] encrypt(byte [] clearText) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException {
+    public byte [] encrypt(byte [] clearText) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, InvalidAlgorithmParameterException, IOException {
         if(isEncryptMode == false) {
             this.cipher.init(Cipher.ENCRYPT_MODE, this.secret, this.aesParams);
             isEncryptMode = true;
         }
         return this.cipher.doFinal(clearText);
     }
-    public byte [] decrypt(byte [] encryptedMessage) throws IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException {
+    public byte [] decrypt(byte [] encryptedMessage) throws IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, InvalidKeyException, NoSuchPaddingException, NoSuchAlgorithmException, IOException {
         if(isEncryptMode == true) {
             this.cipher.init(Cipher.DECRYPT_MODE, this.secret, this.aesParams);
             isEncryptMode = false;
