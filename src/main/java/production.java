@@ -77,9 +77,9 @@ public class production {
                                     byte[] payload = ci.getAes().encrypt(packet.getPayload());
                                     Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
                                     p.recalculateChecksum(); //checksum
-                                    w.send(p, true); //send to server
+                                    w.send(p, false); //send to server
                                 } catch (Exception e) {
-                                    e.printStackTrace();
+                                   // e.printStackTrace();
                                 }
                             }
                         }
