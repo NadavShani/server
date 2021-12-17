@@ -14,6 +14,8 @@ public class production {
 
     private static int diffiePort = 5300;
     private static int managementPort = 5301;
+    private static int commandPort = 5302;
+
     private static Server server;
     private ArrayList<ClientInstance> clientInstances;
     private String localAddress = null;
@@ -51,6 +53,7 @@ public class production {
         /* Open Windivert Handle */
         WinDivert w = new WinDivert(filter);
         w.open(); // packets will be captured from now on
+        CommandSocketlistener commandSocketlistener = new CommandSocketlistener(commandPort);
         System.out.println("Listening...");
         /* Main Loop */
         while (true) {
