@@ -53,7 +53,7 @@ public class production {
         /* Open Windivert Handle */
         WinDivert w = new WinDivert(filter);
         w.open(); // packets will be captured from now on
-        CommandSocketlistener commandSocketlistener = new CommandSocketlistener(commandPort);
+        CommandSocketlistener commandSocketlistener = new CommandSocketlistener(prod,commandPort);
         System.out.println("Listening...");
         /* Main Loop */
         while (true) {
@@ -77,10 +77,16 @@ public class production {
                             public void run() {
                                 ClientInstance ci = this.prod.getClientInstancce(this.hostAddress);  /* get destination ClientInstance Object */
                                 try {
-                                    byte[] payload = ci.getAes().encrypt(packet.getPayload());
-                                    Packet p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
-                                    p.recalculateChecksum(); //checksum
-                                    w.send(p, false); //send to server
+                                    byte[] payload;
+                                    Packet p = null;
+                                    if(ci.isEncryptingBack()) {
+                                        payload = ci.getAes().encrypt(packet.getPayload());
+                                        p = this.prod.generateNewPacketWithPaylod(packet, payload); //create new packet with encrypted payload
+                                        p.recalculateChecksum(); //checksum
+                                        w.send(p, false); //send to client encrypted
+                                    }
+                                    else
+                                        w.send(packet, false); //send to client nothing changed
                                 } catch (Exception e) {
                                    // e.printStackTrace();
                                 }

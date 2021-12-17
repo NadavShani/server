@@ -13,8 +13,10 @@ public class CommandSocketlistener extends Thread {
     private int port;
     private DataInputStream in       =  null;
     private DataOutputStream out     = null;
+    private production prodInstance = null;
 
-    public CommandSocketlistener(int port){
+    public CommandSocketlistener(production prod,int port){
+        this.prodInstance = prod;
         this.port = port;
         start();
     }
@@ -27,8 +29,16 @@ public class CommandSocketlistener extends Thread {
                 socket = server.accept();
                 in = new DataInputStream(new BufferedInputStream(socket.getInputStream()));
                 out = new DataOutputStream(socket.getOutputStream());
-                if (in.readUTF().contains("server encryption")) {
-                    System.out.println("encryption yes");
+                String cmd = in.readUTF();
+                if (cmd.contains("server encryption")) {
+                    String clientIp = socket.getInetAddress().getHostAddress();
+                    ClientInstance ci = this.prodInstance.getClientInstancce(clientIp);
+                    if(cmd.contains("disable")) {
+                        ci.setEncryptingBack(false);
+                    }
+                    else if(cmd.contains("enable")){
+                        ci.setEncryptingBack(true);
+                    }
                     out.writeUTF("command-ok");
                 }
                 server.close();
