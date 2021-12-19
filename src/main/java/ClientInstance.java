@@ -11,7 +11,7 @@ public class ClientInstance {
     public ClientInstance(String clientSrcAddress, AES aes) {
         this.clientSrcAddress = clientSrcAddress;
         this.aes = aes;
-        this.EncryptingBack=true;
+        this.EncryptingBack=false;
     }
 
     /************** GETTERS **************/
