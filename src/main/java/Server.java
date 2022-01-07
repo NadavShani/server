@@ -56,7 +56,7 @@ public class Server
                 out.writeUTF("bob-ok");
                 in.read(payload);
 
-                /* next msg from alice should be her public key */
+                /* payload is alice's public key */
                 bob.generatePublicKeyFrom(payload); /* generating bob public key */
 
                 /* bob is sending his public key to alice */

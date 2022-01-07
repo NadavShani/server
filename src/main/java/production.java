@@ -35,7 +35,8 @@ public class production {
             System.exit(1);
         }
 
-        /* read unsecured protocols file , server version*/
+        /********************* read unsecured protocols file , server version **********************/
+
         File file = new File("unsecured.config");
         Scanner myReader = new Scanner(file);
         ArrayList<Integer> unsecuredProtocols = new ArrayList<Integer>();
@@ -50,9 +51,10 @@ public class production {
                 filter += "tcp.DstPort = " + unsecuredProtocols.get(i) + " or tcp.SrcPort = " + unsecuredProtocols.get(i) + " or tcp.DstPort = " + managementPort;
         }
 
-        /* Open Windivert Handle */
+        /********************* Open Windivert Handle **********************/
         WinDivert w = new WinDivert(filter);
-        w.open(); // packets will be captured from now on
+        w.open();
+        /********************* Start Listening To Commands From Clients **********************/
         CommandSocketlistener commandSocketlistener = new CommandSocketlistener(prod,commandPort);
         System.out.println("Listening...");
         /* Main Loop */
@@ -61,7 +63,7 @@ public class production {
             try {
                 Packet packet = w.recv();  // read a single packet
                 String clientAddr = packet.getSrcAddr();
-                if (clientAddr.equals(prod.getLocalAddress())) { /* Source is Now The Server - Sending Outbound */
+                if (clientAddr.equals(prod.getLocalAddress())) { /********************* OUTBOUND TO CLIENT **********************/
                     String hostAddress = packet.getDstAddr(); /* Destination is Client */
                     if (prod.isClientExists(hostAddress)) { /* is destination a client that i know? */
                         class RunMe implements Runnable {
@@ -96,7 +98,7 @@ public class production {
                     }
                 }
                 else {
-                    /* Do Client Wants To Establish Diffie? */
+                    /********************* ESTABLISHE DIFFIE **********************/
                     if (packet.getTcp().getDstPort() == managementPort) {
 
                         String managementMsg = new String(packet.getPayload());
@@ -106,13 +108,12 @@ public class production {
                                 /* if client is trying to re-exchange diffie - delete current instance of client */
                                 System.out.println("Deleting Client Instance: " + clientAddr);
                                 prod.deleteClientInstance(clientAddr);
-
                             }
                             diffieThread df = new diffieThread(diffiePort, prod);
                         }
 
                     } else {
-                        /* Is Client Exists */
+                        /********************* DECRYPT PACKETS FROM CLIENT **********************/
                         boolean isClientExists = prod.isClientExists(clientAddr);
                         if (isClientExists) {
                             class RunMe implements Runnable {
